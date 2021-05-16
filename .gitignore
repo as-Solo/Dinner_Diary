@@ -129,6 +129,7 @@ dmypy.json
 .pyre/
 
 # Mis movidas
+00_Instalar_librerias.ipynb
 00_Libreta.ipynb
 01_Recoger_datos.ipynb
 02_Mas_Pruebas_SQL.ipynb
@@ -136,3 +137,7 @@ librerias
 listado-codigos-postales-con-LatyLon
 listado-codigos-postales-con-LatyLon.xlsx
 listado-codigos-postales-con-LatyLon.csv
+pruebas
+pruebas.sql
+ideas
+ideas.psd
