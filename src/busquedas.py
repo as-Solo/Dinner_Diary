@@ -181,25 +181,33 @@ def buscar_visitado(nombre, zona, ciudad):
 
 
 
-def lista_visitados(nombre):
+def lista_visitados(id_usuario):
     
     df = pd.read_sql_query(f"""
-        SELECT restaurantes.nombre, restaurantes.direccion, municipios.municipio, cp.codigo, ciudades.ciudad, etiquetas.etiqueta
-        FROM restaurantes
+        SELECT visitado.comentario, restaurantes.nombre, restaurantes.direccion, municipios.municipio, cp.codigo, ciudades.ciudad, etiquetas.etiqueta 
+        
+        FROM usuarios
+
+        INNER JOIN visitado
+        ON visitado.id_usuario = usuarios.id_usuario
+
+        INNER JOIN restaurantes
+        ON restaurantes.id_rest = visitado.id_rest
 
         INNER JOIN municipios
         ON restaurantes.id_municipio = municipios.id_municipio
-        
-        INNER JOIN cp
-        ON restaurantes.id_cp = cp.id_cp
-        
+
         INNER JOIN ciudades
         ON restaurantes.id_ciudad = ciudades.id_ciudad
-        
+
+        INNER JOIN cp
+        ON restaurantes.id_cp = cp.id_cp
+
         INNER JOIN etiquetas
         ON restaurantes.id_etiqueta = etiquetas.id_etiqueta
 
-        WHERE restaurantes.nombre = "{nombre}"
+        WHERE usuarios.id_usuario = {id_usuario}       
+
         """, engine)
     
     return df
@@ -371,7 +379,7 @@ def add_visitado(id_usuario, id_restaurante, valoracion, comentario):
     fecha = datetime.today().strftime('%Y-%m-%d')
     
     engine.execute(f"""
-            INSERT INTO visitado (id_usuario, id_restaurante, valoracion, comentario, fecha)
+            INSERT INTO visitado (id_usuario, id_rest, valoracion, comentario, fecha)
             VALUES ('{id_usuario}', '{id_restaurante}', '{valoracion}', '{comentario}', '{fecha}');
             """)
 
@@ -394,6 +402,35 @@ def buscar_id_rest(nombre, direccion):
 
 
 def mapa_sugerencias(lista, coordenadas_fol):
+
+    map_1 = folium.Map(location= coordenadas_fol, zoom_start= 15)
+
+    iconito = Icon(color = "green",
+             prefix = 'fa',
+             icon = 'thumbs-o-up',
+             icon_color = "black")
+            
+    usuario = Marker(location = coordenadas_fol, tooltip="Usted está aquí. O no", icon = iconito)
+    usuario.add_to(map_1)
+
+    for elem in lista:
+        icono = Icon(color = "orange",
+             prefix = "fa",
+             icon = "cutlery",
+             icon_color = "black")
+
+        loc = {"location":[elem['latitud'],elem['longitud']],
+            "tooltip": elem['nombre']}
+
+        restaurante = Marker(**loc, icon = icono)
+
+        restaurante.add_to(map_1)
+    
+    return map_1
+
+
+
+def mapa_visitados(df, coordenadas_fol):
 
     map_1 = folium.Map(location= coordenadas_fol, zoom_start= 15)
 
