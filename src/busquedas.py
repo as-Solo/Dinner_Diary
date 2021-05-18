@@ -152,30 +152,14 @@ def add_usuario(nombre, apellidos, direccion, mail, telefono, password):
 
 
 
-def buscar_visitado(nombre, zona, ciudad):
+def buscar_visitado(nombre, origen):
     
-    origen = geocode(str(zona) + ',' + str(ciudad))
-    lista_rest = peticion_4s(origen, nombre, 1000)
+    #origen = geocode(str(zona) + ',' + str(ciudad))
+    lista_rest = peticion_4s(origen, nombre, radio = 1000)
     add_restaurantes(lista_rest)
     
-    df = pd.read_sql_query(f"""
-        SELECT restaurantes.nombre, restaurantes.direccion, municipios.municipio, cp.codigo, ciudades.ciudad, etiquetas.etiqueta
-        FROM restaurantes
-
-        INNER JOIN municipios
-        ON restaurantes.id_municipio = municipios.id_municipio
-        
-        INNER JOIN cp
-        ON restaurantes.id_cp = cp.id_cp
-        
-        INNER JOIN ciudades
-        ON restaurantes.id_ciudad = ciudades.id_ciudad
-        
-        INNER JOIN etiquetas
-        ON restaurantes.id_etiqueta = etiquetas.id_etiqueta
-
-        WHERE restaurantes.nombre = "{nombre}"
-        """, engine)
+    df = pd.DataFrame(lista_rest)
+    df = df[['nombre', 'direccion', 'municipio', 'ciudad', 'etiqueta', 'distancia']].sort_values('distancia')
     
     return df
 
@@ -184,7 +168,8 @@ def buscar_visitado(nombre, zona, ciudad):
 def lista_visitados(id_usuario):
     
     df = pd.read_sql_query(f"""
-        SELECT visitado.comentario, restaurantes.nombre, restaurantes.direccion, municipios.municipio, cp.codigo, ciudades.ciudad, etiquetas.etiqueta 
+        SELECT visitado.comentario, restaurantes.nombre, restaurantes.direccion, municipios.municipio, ciudades.ciudad,
+               etiquetas.etiqueta, visitado.valoracion
         
         FROM usuarios
 
@@ -206,6 +191,8 @@ def lista_visitados(id_usuario):
         INNER JOIN etiquetas
         ON restaurantes.id_etiqueta = etiquetas.id_etiqueta
 
+        
+
         WHERE usuarios.id_usuario = {id_usuario}       
 
         """, engine)
@@ -214,7 +201,7 @@ def lista_visitados(id_usuario):
 
 
 
-def peticion_4s(origen, busqueda, radio = None, masivo = None):
+def peticion_4s(origen, busqueda, radio = None, masivo = False, limite = 100):
     
     # Defino las variables que voy a necesitar para hacer el proceso. Son como auxiliares.
     url_query = 'https://api.foursquare.com/v2/venues/explore'
@@ -225,25 +212,22 @@ def peticion_4s(origen, busqueda, radio = None, masivo = None):
     if masivo == True:
         parametros = {
             'categoryId' : '4d4b7105d754a06374d81259',
-            #'section' : 'food',
             'client_id': tok1,
             'client_secret': tok2,
             'v': '20180323',
             'll': origen,
             'query': busqueda, 
-            'limit': 100,
+            'limit': limite,
             'radius' : radio,    
             }
     else:
          parametros = {
-            #'categoryId' : '4d4b7105d754a06374d81259',
-            #'section' : 'food',
             'client_id': tok1,
             'client_secret': tok2,
             'v': '20180323',
             'll': origen,
             'query': busqueda, 
-            'limit': 100,
+            'limit': limite,
             'radius' : radio,    
             }
 
@@ -385,12 +369,23 @@ def add_visitado(id_usuario, id_restaurante, valoracion, comentario):
 
 
 
+def add_plato(id_usuario, id_restaurante, plato, valoracion, comentario):
+    
+    fecha = datetime.today().strftime('%Y-%m-%d')
+    
+    engine.execute(f"""
+            INSERT INTO platos (id_usuario, id_rest, plato, valoracion, comentario, fecha)
+            VALUES ('{id_usuario}', '{id_restaurante}', '{plato}', '{valoracion}', '{comentario}', '{fecha}');
+            """)
+
+
+
 def buscar_id_rest(nombre, direccion):
 
     aux = engine.execute(f"""
-        SELECT id_restaurante
+        SELECT restaurantes.id_rest
         FROM restaurantes
-        WHERE nombre = "{nombre}" AND dirección = "{direccion}"
+        WHERE restaurantes.nombre = "{nombre}" AND restaurantes.direccion = "{direccion}"
     """)
 
     try:
@@ -430,7 +425,7 @@ def mapa_sugerencias(lista, coordenadas_fol):
 
 
 
-def mapa_visitados(df, coordenadas_fol):
+def mapa_visitados(id_usuario, coordenadas_fol):
 
     map_1 = folium.Map(location= coordenadas_fol, zoom_start= 15)
 
@@ -442,17 +437,115 @@ def mapa_visitados(df, coordenadas_fol):
     usuario = Marker(location = coordenadas_fol, tooltip="Usted está aquí. O no", icon = iconito)
     usuario.add_to(map_1)
 
+    lista = engine.execute(f"""
+
+        SELECT restaurantes.nombre, restaurantes.latitud, restaurantes.longitud
+        
+        FROM usuarios
+        
+        INNER JOIN visitado
+        ON visitado.id_usuario = usuarios.id_usuario
+        
+        INNER JOIN restaurantes
+        ON restaurantes.id_rest = visitado.id_rest
+
+        WHERE usuarios.id_usuario = {id_usuario}
+
+        """)
+
+    lista = lista.fetchall()
+
+
     for elem in lista:
         icono = Icon(color = "orange",
              prefix = "fa",
              icon = "cutlery",
              icon_color = "black")
 
-        loc = {"location":[elem['latitud'],elem['longitud']],
-            "tooltip": elem['nombre']}
+        loc = {"location":[elem[1],elem[2]],
+            "tooltip": elem[0]}
 
         restaurante = Marker(**loc, icon = icono)
 
         restaurante.add_to(map_1)
     
     return map_1
+
+
+
+def lista_etiquetas():
+    
+    respuesta = []
+    query = engine.execute('''
+                        SELECT etiqueta
+                        FROM etiquetas
+                    ''')
+    aux = query.fetchall()
+
+    for elem in aux:
+        respuesta.append(elem[0])
+
+    return respuesta
+
+
+
+def add_nuevo_restaurante(diccionario):  
+    
+    try:
+        engine.execute(f"""
+        INSERT INTO cp (codigo)
+        VALUES ("{diccionario['codigo']}");
+        """)
+    except:
+        print('El código ya existe')
+    
+    try:
+        engine.execute(f"""
+        INSERT INTO municipios (municipio)
+        VALUES ("{diccionario['municipio']}");
+        """)
+    except:
+        print('El municipio ya existe')
+        
+    try:
+        engine.execute(f"""
+        INSERT INTO ciudades (ciudad)
+        VALUES ("{diccionario['ciudad']}");
+        """)
+    except:
+        print('Esa ciudad ya existe')
+        
+    try:
+        engine.execute(f"""
+        INSERT INTO paises (pais)
+        VALUES ("{diccionario['pais']}", "{elem['acron']}");
+        """)
+    except:
+        print('El pais ya existe')
+        
+    try:
+        engine.execute(f"""
+        INSERT INTO etiquetas (etiqueta)
+        VALUES ("{diccionario['etiqueta']}");
+        """)
+    except:
+        print('La etiqueta ya existe')
+    
+    etiqueta = engine.execute(f"""SELECT id_etiqueta FROM etiquetas WHERE etiqueta = "{diccionario['etiqueta']}" """)
+    etiqueta = etiqueta.fetchall()[0][0]
+    pais = engine.execute(f""" SELECT id_pais FROM paises WHERE pais = "{diccionario['pais']}" """)
+    pais = pais.fetchall()[0][0]
+    ciudad = engine.execute(f""" SELECT id_ciudad FROM ciudades WHERE ciudad = "{diccionario['ciudad']}" """)
+    ciudad = ciudad.fetchall()[0][0]
+    municipio = engine.execute(f""" SELECT id_municipio FROM municipios WHERE municipio = "{diccionario['municipio']}" """)
+    municipio = municipio.fetchall()[0][0]
+    codigo = engine.execute(f""" SELECT id_cp FROM cp WHERE codigo = "{diccionario['codigo']}" """)
+    codigo = codigo.fetchall()[0][0]
+    
+    try:
+        engine.execute(f"""
+        INSERT INTO restaurantes (nombre, direccion, latitud, longitud, id_etiqueta, id_pais, id_ciudad, id_municipio, id_cp)
+        VALUES ("{diccionario['nombre']}", "{diccionario['direccion']}", "{diccionario['latitud']}", "{diccionario['longitud']}", {etiqueta}, "{pais}", "{ciudad}", "{municipio}", "{codigo}");
+        """ )
+    except:
+        print('Este restaurante ya ha sido añadido anteriormente')

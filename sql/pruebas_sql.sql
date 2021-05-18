@@ -9,12 +9,35 @@ SELECT * FROM municipios
 SELECT * FROM etiquetas
 SELECT * FROM cp
 
-SELECT * FROM restaurantes where direccion = 'General Ricardos, 19'
+SELECT * FROM restaurantes
 SELECT * FROM usuarios
 SELECT * FROM visitado
 
-DELETE FROM restaurantes WHERE direccion = 'La mia'
+DELETE FROM visitado WHERE id_visitado = 4
+
+select etiqueta from etiquetas
+
+SELECT restaurantes.id_rest
+FROM restaurantes
+WHERE restaurantes.nombre = 'Restaurante Italiano San Marcos' AND restaurantes.direccion = 'Calle Doctor Pedro de Castro 1'
+
+SELECT *
+FROM restaurantes
+WHERE restaurantes.nombre = "O'Lagar"
+
+SELECT *
+FROM etiquetas
+WHERE etiquetas.id_etiqueta = 8553
 
 
+SELECT restaurantes.nombre, restaurantes.latitud, restaurantes.longitud
+        
+FROM usuarios
 
-Error Code: 1175. You are using safe update mode and you tried to update a table without a WHERE that uses a KEY column.  To disable safe mode, toggle the option in Preferences -> SQL Editor and reconnect.
+INNER JOIN visitado
+ON visitado.id_usuario = usuarios.id_usuario
+
+INNER JOIN restaurantes
+ON restaurantes.id_rest = visitado.id_rest
+
+WHERE usuarios.id_usuario = 1  

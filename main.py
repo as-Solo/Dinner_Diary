@@ -58,7 +58,7 @@ if mail_log.checkbox('Login'):
 
 
 
-menu = ['HOME', 'AÑADIR RESTAURANTE', 'RECOMENDACIONES', 'NUEVO RESTAURANTE', 'REGISTRARSE']
+menu = ['HOME', 'AÑADIR COMENTARIO', 'RECOMENDACIONES', 'NUEVO RESTAURANTE', 'REGISTRARSE']
 
 choice = st.sidebar.selectbox('MENU', menu)
 
@@ -69,7 +69,8 @@ choice = st.sidebar.selectbox('MENU', menu)
 
 if choice == 'HOME':
     try:
-        hueco_01.header(f'MIS SITIOS {id_usuario}')  
+        print(id_usuario)
+        hueco_01.header(f'MIS SITIOS')  
         
     except:
         hueco_01.header('MIS SITIOS')
@@ -79,38 +80,46 @@ if choice == 'HOME':
     if id_usuario == None:
             pass
     else:
-        #----------------------------------------------------EJECUCIÓN HOME---------------------------------------------------
+        #--------------------------------------------------------EJECUCIÓN HOME---------------------------------------------------
 
         st.write('Hasta que seamos capaces de acceder a tus datos de geolocalización, por favor, indicanos dónde te encuentras o dónde quieres realizar la búsqueda')
         
-        menu01_01, menu01_02, menu01_03 = st.beta_columns([1,1,1])
+        menu01_01, menu01_02, menu01_03 = st.beta_columns([1,2,1])
         with menu01_01:
-            zona_home = st.text_input('Introduce la zona en la que quieres buscar')
+            zona_home = st.text_input('Introduce: zona, ciudad, país', key = 'kz_home',)
+        
 
         with menu01_02:
-            ciudad_home = st.text_input('Introduce la ciudad')
+            st.write('')
+            st.write('')
+            st.write('En muchos casos el País no será necesario. Pero si ves que el resultado no es el esperado prueba a ponerlo')
+            #ciudad_home = st.text_input('Introduce la ciudad', key = 'kc_home')
         
         if menu01_01.checkbox('Coordenadas'):
             try:
-                busqueda_coord = zona_home + ', ' + ciudad_home
-                coordenadas_fol_home = td.geocode_fol(busqueda_coord)
+                #busqueda_coord = zona_home + ', ' + ciudad_home
+                coordenadas_fol_home = td.geocode_fol(zona_home)
+    #            st.write(coordenadas_fol_home)
 
             except:
                 st.warning('Estamos teniendo problemas para localizarte')
-                st.write(coordenadas_fol_home)
+                coordenadas_fol_home = None
+    #            st.write(coordenadas_fol_home)
             
             if coordenadas_fol_home != None:
                     
                     
-                    map_1 = folium.Map(location= coordenadas_fol_home, zoom_start= 15)
+                    map_1 = td.mapa_visitados(id_usuario, coordenadas_fol_home)
                     
-                    ubicacion = Marker(location = coordenadas_fol_home, tooltip="Usted está aquí. O no")
-                    ubicacion.add_to(map_1)
+                    #ubicacion = Marker(location = coordenadas_fol_home, tooltip="Usted está aquí. O no")
+                    #ubicacion.add_to(map_1)
 
                     visitados = td.lista_visitados(id_usuario)
 
                     st.write(visitados)
-                    folium_static(map_1)
+                    folium_static(map_1, width = 1106)
+            else:
+                st.warning('No te encontramos. Prueba en inglés que eso siempre funciona.')
                     
                         
         
@@ -127,9 +136,10 @@ if choice == 'HOME':
 #--------------------------------------------------------------------------------------------------------------------------
 
 
-if choice == 'AÑADIR RESTAURANTE':
+if choice == 'AÑADIR COMENTARIO':
     try:
-        hueco_01.header(f'AÑADIR RESTAURANTE {id_usuario}')  
+        print(id_usuario)
+        hueco_01.header(f'AÑADIR COMENTARIO')  
         
     except:
         hueco_01.header('AÑADIR RESTAURANTE')
@@ -139,65 +149,103 @@ if choice == 'AÑADIR RESTAURANTE':
     if id_usuario == None:
             pass
     else:
-        #----------------------------------------- EJECUCIÓN AÑADIR A VISITADOS ---------------------------------------------------
+        #----------------------------------------- EJECUCIÓN AÑADIR COMENTARIO ---------------------------------------------------
         
         st.write('¿En qué zona se encuentra el restaurante que quieres añadir?, y ¿cómo se llama?')
         
         menu02_01, menu02_02, menu02_03 = st.beta_columns([1,1,1])
         with menu02_01:
-            zona_visitados = st.text_input('Introduce la zona en la que quieres buscar')
-
+            zona_visitados = st.text_input('Introduce zona, ciudad, país', key = 'kz_visitados')
+        
         with menu02_02:
-            ciudad_visitados = st.text_input('Introduce la ciudad')
+            st.write('')
+            st.write('')
+            if st.checkbox('coordenadas'):
+                try:
+                    coordenadas_fol_visitados = td.geocode_fol(zona_visitados)
+                    coordenadas_visitados = str(coordenadas_fol_visitados[0]) + ', ' + str(coordenadas_fol_visitados[1])
+                except:
+                    st.warning('Hay que darle al botón')
+                    coordenadas_visitados = None
+            else:
+                coordenadas_fol_visitados = ''
+                coordenadas_visitados = ''
 
         with menu02_03:
-            nombre_visitados = st.text_input('Introduce el nombre del restaurante')
+            nombre_visitados = st.text_input('Introduce el nombre del restaurante', key = 'kn_visitados')
 
-        menu02_04, menu02_05, = st.beta_columns([2, 1])
+        menu02_04, menu02_05, menu02_05b = st.beta_columns([1.5, 3, 1])
 
-        comentario = menu02_04.text_input('Deja tus comentarios')
+        direccion_visitados = menu02_04.text_input('direccion', key = 'kd_visitados')
 
-        valoracion = menu02_05.selectbox('Puntuación',[1, 2, 3, 4, 5])
+        comentario = menu02_05.text_input('Deja tus comentarios sobre el restaurante', key = 'kc_visitados')
 
-        {zona_visitados}, {ciudad_visitados}, {nombre_visitados}, {comentario}, {valoracion}, 
-        if zona_visitados != '' and ciudad_visitados != '':
-        
-                busqueda_coord = zona_visitados + ', ' + ciudad_visitados
-                                
-                coordenadas_fol_visitados = td.geocode_fol(busqueda_coord)
-                coordenadas_visitados = str(coordenadas_fol_visitados[0]) + ', ' + str(coordenadas_fol_visitados[1])
-                {busqueda_coord}, {coordenadas_visitados}
-                sleep(1)
+        valoracion = menu02_05b.selectbox('Puntuación',[1, 2, 3, 4, 5], key = 'kv_visitados')
 
-                if coordenadas_visitados == None:
-                    menu01_04.warning('No localizamos la zona. Normalmente se soluciona volviendo a introducir algún dato')
+        #menu02_06, menu02_07, menu02_08 = st.beta_columns([1.5, 3, 1])
 
-                else:
-                    try:
-                        df = td.buscar_visitado(nombre_visitados, zona_visitados, ciudad_visitados)
-                        id_restaurante = td.buscar_en('id_rest', nombre_visitados, 'restaurantes', 'nombre')
-                        st.write([df, id_restaurante])
-                    except:
-                        st.warning('Por favor, actualiza algún dato de tu busqueda')
+        #nombre_plato = menu02_06.text_input('Introduce el nombre del plato', key = 'kp_nombrePlato')
 
-                    if id_restaurante != None:
-                        st.success('BIEEEEN!')
-                        if menu01_05.button('Crear comentario'):
-                            try:
-                                td.add_visitado(id_usuario, id_restaurante, valoracion, comentario)
-                            except:
-                                td.warning('Ha ocurrido un error, recuerda que los comentarios no pueden ser idénticos')
-                        
+        #comentario_plato = menu02_07.text_input('Introduce tu comentario sobre el plato', key = 'kp_comentarioPlato')
+
+        #puntuacion_plato = menu02_08.selectbox('Puntuación del plato', [1, 2, 3, 4, 5], key = 'kp_pusntuacionPlato')
+
+#        {zona_visitados}, {coordenadas_visitados}, {nombre_visitados}, {direccion_visitados}, {comentario}, {valoracion}
+        if menu02_05b.checkbox('Dame opciones'):
+            if coordenadas_visitados != '':
+                    
+        #            {zona_visitados}, {coordenadas_visitados}
+                    #sleep(1)
+
+                    if coordenadas_visitados == None:
+                        menu02_04.warning('No localizamos la zona. Normalmente se soluciona volviendo a introducir algún dato')
 
                     else:
-                        st.warning('No estamos encontrando el restaurante que buscas. Prueba a modificar el nombre o la localización o introducelo en el menú NUEVO RESTAURANTE') 
-    #                    
+                        try:
+                            df = td.buscar_visitado(nombre_visitados, coordenadas_visitados)
+                            #id_restaurante = td.buscar_en('id_rest', nombre_visitados, 'restaurantes', 'nombre')
+                            st.write('')
+                            st.write('Estos son los restaurantes que coinciden con los datos introducidos')
+                            st.write(df)
+                        except:
+                            #st.warning('Por favor, actualiza algún dato de tu busqueda')
+                            #id_restaurante = None
+                            pass
 
-                        
+                        if nombre_visitados != '':
+                            
+                            if comentario != '':
 
-            
+                                if direccion_visitados != '':
 
-                        
+                                    #try:
+
+                                    id_restaurante = td.buscar_id_rest(nombre_visitados, direccion_visitados)
+#                                    {id_restaurante}
+                                    if st.button('Crear comentario'):
+                                        
+                                        try:
+                                            td.add_visitado(id_usuario, id_restaurante, valoracion, comentario)
+                                            st.success('Comentario añadido satisfactoriamente')
+                                        except:
+                                            st.warning('Ha ocurrido un error, recuerda que los comentarios no pueden ser idénticos')
+                                
+                                    #except:
+                                    # st.warning('El nombre del restaurante y la dirección no coinciden')
+                                else:
+                                    st.warning('Rescuerda que tienes que introducir un dirección para comentar a un restaurante concreto. La tabla te puede ser de ayuda.')
+                            
+                            else:
+                                st.warning('Tienes que introducir un comentario')
+                        else:
+                            st.warning('No estamos encontrando el restaurante que buscas. Prueba a modificar el nombre o la localización o introducelo en el menú NUEVO RESTAURANTE') 
+                            
+
+                            
+
+                
+
+                            
 
                         #td.add_visitado(id_usuario, id_restaurante, valoracion, comentario)
 
@@ -210,7 +258,8 @@ if choice == 'AÑADIR RESTAURANTE':
 
 elif choice == 'RECOMENDACIONES':
     try:
-        hueco_01.header(f"RECOMENDACIONES  {id_usuario}")
+        print(id_usuario)
+        hueco_01.header(f"RECOMENDACIONES")
     except:
         hueco_01.subheader('RECOMENDACIONES')
         id_usuario = None
@@ -222,40 +271,41 @@ elif choice == 'RECOMENDACIONES':
 
         st.write('Hasta que seamos capaces de acceder a tus datos de geolocalización, por favor, indicanos dónde te encuentras o dónde quieres realizar la búsqueda')
         
-        menu03_01, menu03_02, menu03_03 = st.beta_columns([1,1,1])
+        menu03_01, menu03_02, menu03_03 = st.beta_columns([1,1,1.5])
         with menu03_01:
-            zona = st.text_input('Introduce la zona en la que quieres buscar')
+            zona_recomendacion = st.text_input('Introduce: zona, ciudad, país', key = 'kz_recomendacion')
 
         with menu03_02:
-            ciudad = st.text_input('Introduce la ciudad')
-        
+            busqueda_recomendacion = st.text_input('¿QUÉ TE APETECE HOY?', key = 'ke_recomendacion')
+
+        lista_etiquetas_recomendacion = td.lista_etiquetas()
+    
         with menu03_03:
-            busqueda = st.text_input('¿QUÉ TE APETECE HOY?')
+            etiqueta_recomendacion = st.selectbox('Nuestras opciones', lista_etiquetas_recomendacion)
         
         if menu03_01.checkbox('Coordenadas'):
             try:
-                busqueda_coord = zona + ', ' + ciudad
-                coordenadas_fol = td.geocode_fol(busqueda_coord)
-                origen = td.geocode(busqueda_coord)
+                coordenadas_fol_recomendacion = td.geocode_fol(zona_recomendacion)
+                origen = str(coordenadas_fol_recomendacion[0]) + ', ' + str(coordenadas_fol_recomendacion[1])
             except:
-                st.warning('Estamos teniendo problemas para localizarte')
+                #st.warning('Estamos teniendo problemas para localizarte')
+                coordenadas_fol_recomendacion = None
             
-            if coordenadas_fol != None and origen != None:
+            if coordenadas_fol_recomendacion != None and origen != None:
+                            
+                menu03_02.write(str(coordenadas_fol_recomendacion) + ' ' + origen + ' ' + busqueda_recomendacion)
                 
-                
-                menu03_02.write(str(coordenadas_fol) + ' ' + origen + ' ' + busqueda)
-                
-                if busqueda != '':
+                if busqueda_recomendacion != '':
                     if menu03_03.button('BUSCAR'):
-                        lista_recomendacion = td.peticion_4s(origen, busqueda)
+                        lista_recomendacion = td.peticion_4s(origen, busqueda_recomendacion)
                         mostrar = pd.DataFrame(lista_recomendacion).sort_values('distancia')
                         st.write('')
 
                         menu03_04, menu03_05, menu03_06 = st.beta_columns([1,4,1])
-                        map_1 = td.mapa_sugerencias(lista_recomendacion, coordenadas_fol)
+                        map_1 = td.mapa_sugerencias(lista_recomendacion, coordenadas_fol_recomendacion)
 
-                        with menu03_05:
-                            folium_static(map_1)
+                        #with menu03_05:
+                        folium_static(map_1, width = 1106)
                         st.write(mostrar[['nombre', 'direccion', 'etiqueta', 'distancia']], layout="wide")
             else:
                 st.warning('No encontramos el sitio donde quieres buscar')
@@ -266,17 +316,88 @@ elif choice == 'RECOMENDACIONES':
         #--------------------------------------------------------------------------------------------------------------------------
 
 
-#--------------------------------------------------------------------------------------------------------------------------
-#--------------------------------------------------------------------------------------------------------------------------
-
+#-----------------------------------------------------------------------------------------------------------------------------------
+#-----------------------------------------------EJECUCIÓN NUEVO RESTAURANTE---------------------------------------------------------
 
 elif choice == 'NUEVO RESTAURANTE':
     try:
-        hueco_01.header(f'NUEVO RESTAURANTE {id_usuario}')
+        print(id_usuario)
+        hueco_01.header(f'NUEVO RESTAURANTE')
         if id_usuario == None:
             hueco_01.warning('No te encuentras registrado')
         else:
-            pass
+
+            lista_etiquetas_nuevo_restaurante = td.lista_etiquetas()
+            nuevo_restaurante_datos = {}
+
+            #------------------------------------------------------------------------------------------------FILA 1 INTERFAZ
+            menu04_01, menu04_02, menu04_03, menu04_04 = st.beta_columns([1, 1.5, 0.65, 1])
+            
+            with menu04_01:
+                nuevo_restaurante_datos['nombre'] = st.text_input('Nombre *', key = 'kn_nuevo_restaurante')
+
+            with menu04_02:
+                nuevo_restaurante_datos['direccion'] = st.text_input('Dirección *', key = 'kd_nuevo_restaurante')
+
+            with menu04_03:
+                nuevo_restaurante_datos['telefono'] = st.text_input('Teléfono', key = 'kt_nuevo_restaurante')
+
+            with menu04_04:
+                nuevo_restaurante_datos['web'] = st.text_input('Web', key = 'kw_nuevo_restaurante')
+
+            #------------------------------------------------------------------------------------------------FILA 2 INTERFAZ
+            menu04_05, menu04_06, menu04_07, menu04_08, menu04_09 = st.beta_columns([1, 1, 1, 1, 1])
+            
+            with menu04_05:
+                nuevo_restaurante_datos['municipio'] = st.text_input('Municipio', key = 'km_nuevo_restaurante')
+
+            with menu04_06:
+                nuevo_restaurante_datos['codigo'] = st.text_input('Código Postal', key = 'kcp_nuevo_restaurante')
+
+            with menu04_07:
+                nuevo_restaurante_datos['ciudad'] = st.text_input('Ciudad *', key = 'kc_nuevo_restaurante')
+
+            with menu04_08:
+                nuevo_restaurante_datos['pais'] = st.text_input('Pais *', key = 'kp_nuevo_restaurante')
+
+            with menu04_09:
+                nuevo_restaurante_datos['etiqueta'] = st.selectbox('Etiqueta', lista_etiquetas_nuevo_restaurante, key = 'ke_nuevo_restaurante')
+
+            #------------------------------------------------------------------------------------------------
+            if menu04_09.button('Añadir Restaurante'):
+                address = nuevo_restaurante_datos['direccion'] + ', ' + nuevo_restaurante_datos['ciudad'] + ', ' + nuevo_restaurante_datos['pais']
+                coordenadas_fol_nuevo_restaurante = td.geocode_fol(address)
+                
+                st.write(address)
+                st.write(coordenadas_fol_nuevo_restaurante)
+
+                if nuevo_restaurante_datos['nombre'] != '' and nuevo_restaurante_datos['direccion'] != '' and nuevo_restaurante_datos['ciudad'] != '' and nuevo_restaurante_datos['pais'] != '':
+                        try:
+                            nuevo_restaurante_datos['latitud'] = coordenadas_fol_nuevo_restaurante[0]
+                            nuevo_restaurante_datos['longitud'] = coordenadas_fol_nuevo_restaurante[1]
+            #                st.write(address)
+            #                st.write(coordenadas_fol_nuevo_restaurante)
+            #                st.write(nuevo_restaurante_datos['latitud'])
+            #                st.write(nuevo_restaurante_datos['longitud'])
+            #                st.write(nuevo_restaurante_datos)
+                            try:
+                                td.add_nuevo_restaurante(nuevo_restaurante_datos)
+                                st.success('Restaurante incluido con exito')
+                            except:
+                                st.warning('No hemos podido añadir el restaurante a la base de datos')
+                        except:
+                           nuevo_restaurante_datos['latitud'] = None
+                           nuevo_restaurante_datos['longitud'] = None
+            #               st.write(address)
+            #               st.write(coordenadas_fol_nuevo_restaurante)
+
+
+                        
+                else:
+                    st.warning('Recuerda que hay campos olbligatorios *')
+
+            
+
     except:
         pass
 
