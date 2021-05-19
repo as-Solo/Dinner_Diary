@@ -58,7 +58,7 @@ if mail_log.checkbox('Login'):
 
 
 
-menu = ['HOME', 'AÑADIR COMENTARIO', 'RECOMENDACIONES', 'NUEVO RESTAURANTE', 'REGISTRARSE']
+menu = ['HOME', 'AÑADIR COMENTARIO', 'RECOMENDACIONES', 'NUEVO RESTAURANTE', 'BORRAR COMENTARIO', 'REGISTRARSE']
 
 choice = st.sidebar.selectbox('MENU', menu)
 
@@ -191,6 +191,7 @@ if choice == 'AÑADIR COMENTARIO':
         #puntuacion_plato = menu02_08.selectbox('Puntuación del plato', [1, 2, 3, 4, 5], key = 'kp_pusntuacionPlato')
 
 #        {zona_visitados}, {coordenadas_visitados}, {nombre_visitados}, {direccion_visitados}, {comentario}, {valoracion}
+#        {nombre_plato}, {comentario_plato}, {puntuacion_plato}
         if menu02_05b.checkbox('Dame opciones'):
             if coordenadas_visitados != '':
                     
@@ -282,6 +283,7 @@ elif choice == 'RECOMENDACIONES':
     
         with menu03_03:
             etiqueta_recomendacion = st.selectbox('Nuestras opciones', lista_etiquetas_recomendacion)
+            radio = st.slider('Distancia máxima en metros', min_value = 500, max_value = 3000, key = 'kr_radio_recomendacion')
         
         if menu03_01.checkbox('Coordenadas'):
             try:
@@ -293,11 +295,13 @@ elif choice == 'RECOMENDACIONES':
             
             if coordenadas_fol_recomendacion != None and origen != None:
                             
-                menu03_02.write(str(coordenadas_fol_recomendacion) + ' ' + origen + ' ' + busqueda_recomendacion)
-                
+    #            menu03_02.write(str(coordenadas_fol_recomendacion) + ' ' + origen + ' ' + busqueda_recomendacion)
+                if busqueda_recomendacion == '':
+                            busqueda_recomendacion = etiqueta_recomendacion
                 if busqueda_recomendacion != '':
                     if menu03_03.button('BUSCAR'):
-                        lista_recomendacion = td.peticion_4s(origen, busqueda_recomendacion)
+                        lista_recomendacion = td.peticion_4s(origen, busqueda_recomendacion, radio = radio)
+                        td.add_restaurantes(lista_recomendacion)
                         mostrar = pd.DataFrame(lista_recomendacion).sort_values('distancia')
                         st.write('')
 
@@ -404,6 +408,34 @@ elif choice == 'NUEVO RESTAURANTE':
 
 #--------------------------------------------------------------------------------------------------------------------------
 #--------------------------------------------------------------------------------------------------------------------------
+
+elif choice == 'BORRAR COMENTARIO':
+    try:
+        print(id_usuario)
+        hueco_01.header(f'BORRAR COMENTARIO')
+        if id_usuario == None:
+            hueco_01.warning('No te encuentras registrado')
+        else:
+            menu05_01, menu05_02, menu05_03 = st.beta_columns([5,1,2])
+            #st.write('VAS A ELIMINAR UN COMENTARIO')
+            lista_desplegable = td.lista_comentarios(id_usuario)
+            comentario_borrar = menu05_01.selectbox('Tus comentarios', lista_desplegable, key = 'Lista de comentarios')
+            menu05_03.write('')
+            menu05_03.write('')
+            menu05_03.write('')
+            if menu05_03.button('Borrar comentario'):
+                td.borrar_comentario(id_usuario, comentario_borrar)
+                menu05_01.success('Comentario borrado con éxito')
+
+    except:
+        pass
+
+
+
+#--------------------------------------------------------------------------------------------------------------------------
+#--------------------------------------------------------------------------------------------------------------------------
+
+
 elif choice == 'REGISTRARSE':
     hueco_01.header('REGISTRARSE ')
     colum1, colum2 = st.beta_columns([1,2])

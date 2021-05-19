@@ -353,8 +353,21 @@ def add_restaurantes(lista):
             INSERT INTO restaurantes (clave, nombre, direccion, latitud, longitud, id_etiqueta, id_pais, id_ciudad, id_municipio, id_cp)
             VALUES ("{elem['clave']}", "{elem['nombre']}", "{elem['direccion']}", "{elem['latitud']}", "{elem['longitud']}", {etiqueta}, "{pais}", "{ciudad}", "{municipio}", "{codigo}");
             """ )
+            
+            
         except:
             print('Este restaurante ya ha sido añadido anteriormente')
+            
+        
+        try:
+            engine.execute(f"""
+                    UPDATE restaurantes
+                    SET restaurantes.busquedas = restaurantes.busquedas + 1
+                    WHERE restaurantes.nombre = "{elem['nombre']}" AND restaurantes.direccion = "{elem['direccion']}"
+                """)
+            print ('-------------------------------------------------------------------------------BIEN')
+        except:
+            print('FALLO-----------------------------------------------------------------------------')
 
 
 
@@ -549,3 +562,30 @@ def add_nuevo_restaurante(diccionario):
         """ )
     except:
         print('Este restaurante ya ha sido añadido anteriormente')
+
+
+
+
+def borrar_comentario(id_usuario, comentario):
+
+    engine.execute(f'''
+
+                DELETE FROM visitado
+                WHERE visitado.id_usuario = {id_usuario} AND visitado.comentario = "{comentario}"
+    ''')
+
+
+
+
+def lista_comentarios(id_usuario):
+    
+    df = pd.read_sql_query(f"""
+        SELECT visitado.comentario
+        
+        FROM visitado
+
+        WHERE visitado.id_usuario = {id_usuario}       
+
+        """, engine)
+    
+    return df
