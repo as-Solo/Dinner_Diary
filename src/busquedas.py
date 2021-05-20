@@ -34,6 +34,12 @@ tok3 = os.getenv('SQL')
 #----------------------------------------------------------------------------------------
 #----------------------------------------------------------------------------------------
 
+connectionData = f'mysql+pymysql://root:{tok3}@localhost/diary'
+engine = alch.create_engine(connectionData)
+
+
+
+
 def geocode(address):
     '''
     Saca las coordenadas de una dirección que le des.
