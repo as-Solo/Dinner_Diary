@@ -4,6 +4,7 @@
 #----------------------------------------------------------------------------------------
 #----------------------------------------------------------------------------------------
 
+import sqlalchemy as alch
 import folium
 import json
 import os
@@ -34,7 +35,7 @@ tok3 = os.getenv('SQL')
 #----------------------------------------------------------------------------------------
 #----------------------------------------------------------------------------------------
 
-connectionData = f'mysql+pymysql://root:{tok3}@localhost/diary'
+connectionData = f'mysql+pymysql://root:admin@localhost/diary'
 engine = alch.create_engine(connectionData)
 
 
